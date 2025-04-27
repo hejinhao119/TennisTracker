@@ -1,28 +1,23 @@
-# pose_estimation/yolo_pose_estimator.py
-
 from ultralytics import YOLO
 import cv2
 
 # Load the YOLOv8 Pose model
 model = YOLO('../models/yolov8n-pose.pt')
 
-def detect_pose(image_path):
+def detect_pose(frame):
     """
-    Detect human poses in an image.
-
+    Detects pose on the given image frame.
+    
     Args:
-        image_path (str): Path to the input image.
+        frame (np.ndarray): Input image frame.
 
     Returns:
-        result (Results object): The result containing keypoints and other information.
+        annotated_frame (np.ndarray): Annotated image frame with pose landmarks.
     """
-    # Read image
-    img = cv2.imread(image_path)
+    results = model.predict(source=frame, save=False, conf=0.3)
 
-    if img is None:
-        raise ValueError(f"Image at {image_path} cannot be loaded.")
+    if results is None or len(results) == 0:
+        return None
 
-    # Run inference
-    results = model.predict(source=img, save=False, imgsz=640, conf=0.3)
-
-    return results[0]
+    annotated_frame = results[0].plot()
+    return annotated_frame
