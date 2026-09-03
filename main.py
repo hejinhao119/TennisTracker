@@ -5,6 +5,9 @@ import streamlit as st
 
 from agents.orchestration import run_coaching_analysis
 from evidence.builder import build_evidence
+from memory.models import SessionMetric
+from memory.repository import SessionRepository
+from memory.session_history import compare_metric
 
 
 st.set_page_config(page_title="TennisTracker Coach", layout="wide")
@@ -30,10 +33,15 @@ if analyze and uploaded_video is not None:
 			strokes=[],
 			pose_observations=list(video_result.pose_observations),
 		)
+		repository = SessionRepository()
+		pose_metric = evidence.item("metric.pose.detection_rate")
+		previous_pose = repository.get_metric_history(pose_metric.evidence_id, limit=1)
+		repository.save_evidence(evidence)
 		st.session_state["analysis"] = run_coaching_analysis(evidence)
 		st.session_state["evidence"] = evidence
 		st.session_state["video_result"] = video_result
 		st.session_state["video_name"] = uploaded_video.name
+		st.session_state["previous_pose"] = previous_pose[0] if previous_pose else None
 	except (OSError, ValueError, RuntimeError) as error:
 		st.error(f"Video analysis failed: {error}")
 
@@ -46,6 +54,20 @@ else:
 	evidence = st.session_state["evidence"]
 	st.metric("Sampled pose frames", len(video_result.pose_observations))
 	st.metric("Pose detection rate", f"{evidence.item('metric.pose.detection_rate').value:.0%}")
+	previous_pose = st.session_state.get("previous_pose")
+	if previous_pose is not None:
+		current_pose = evidence.item("metric.pose.detection_rate")
+		comparison = compare_metric(
+			previous_pose,
+			SessionMetric(
+				evidence.session_id,
+				current_pose.evidence_id,
+				current_pose.value,
+				current_pose.sample_count,
+				current_pose.measurement_confidence,
+			),
+		)
+		st.caption(f"Previous session change: {comparison.change:+.0%} ({comparison.reason})")
 	overview, technical, tactical, trace = st.tabs(
 		["Match Overview", "Technical Analysis", "Tactical Analysis", "Agent Trace"]
 	)
