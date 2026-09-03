@@ -12,6 +12,7 @@ TennisTracker is an evidence-grounded coaching prototype combining local compute
 - A mock LLM provider supports deterministic local tests without paid API calls.
 - Streamlit exposes upload, analysis status, limitations, coach output, and an execution trace.
 - Dense pose sampling can produce a movement-pattern report with linked frame transitions and a practical shadow-swing drill.
+- The report includes the source video, a movement chart, representative frames, and an evidence-linked supporting clip.
 
 ## Architecture
 
@@ -41,7 +42,7 @@ pip install -r requirements.txt
 streamlit run main.py
 ```
 
-The current entry point honestly reports insufficient structured stroke evidence after upload. The next migration step is to adapt existing and future ball, stroke, and court extractors into `StrokeObservation` instances before enabling richer coaching claims.
+The current entry point reports pose-derived movement evidence with visual support. Stroke type, ball trajectory, court position, and in/out claims remain unavailable until those extractors are implemented.
 
 ## Testing
 
@@ -57,4 +58,4 @@ The evaluation design and single-agent baseline are documented in [docs/evaluati
 
 ## Limitations
 
-The repository currently ships a pose annotation utility, not a complete stroke, ball, court, or in/out measurement pipeline. Serve biomechanics, tactical direction, error correlation, and performance improvement must remain unavailable until their measurements are implemented and validated.
+The repository currently has one real tennis recording, duplicated at `data/raw/` and `testing/`. The visual report is therefore a useful prototype, not a cross-video benchmark. Serve biomechanics, tactical direction, error correlation, and performance improvement remain unavailable until their measurements and independent video fixtures are implemented and validated.

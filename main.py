@@ -8,6 +8,7 @@ from evidence.builder import build_evidence
 from memory.models import SessionMetric, UserFeedback
 from memory.repository import SessionRepository
 from memory.session_history import compare_metric
+from video_analysis.media import create_clip, extract_frame, movement_series
 
 
 st.set_page_config(page_title="TennisTracker Coach", layout="wide")
@@ -40,6 +41,7 @@ if analyze and uploaded_video is not None:
 		st.session_state["analysis"] = run_coaching_analysis(evidence)
 		st.session_state["evidence"] = evidence
 		st.session_state["video_result"] = video_result
+		st.session_state["video_path"] = video_path
 		st.session_state["video_name"] = uploaded_video.name
 		st.session_state["previous_pose"] = previous_pose[0] if previous_pose else None
 	except (OSError, ValueError, RuntimeError) as error:
@@ -52,6 +54,7 @@ else:
 	st.success(f"Session analyzed: {st.session_state['video_name']}")
 	video_result = st.session_state["video_result"]
 	evidence = st.session_state["evidence"]
+	video_path = st.session_state["video_path"]
 	st.metric("Sampled pose frames", len(video_result.pose_observations))
 	st.metric("Pose detection rate", f"{evidence.item('metric.pose.detection_rate').value:.0%}")
 	previous_pose = st.session_state.get("previous_pose")
@@ -68,14 +71,42 @@ else:
 			),
 		)
 		st.caption(f"Previous session change: {comparison.change:+.0%} ({comparison.reason})")
-	overview, technical, tactical, trace = st.tabs(
-		["Match Overview", "Technical Analysis", "Tactical Analysis", "Agent Trace"]
+	overview, evidence_tab, technical, tactical, trace = st.tabs(
+		["Match Overview", "Evidence", "Technical Analysis", "Tactical Analysis", "Agent Trace"]
 	)
 	with overview:
 		st.subheader("Match analysis")
 		st.write(analysis.match.summary)
 		for limitation in analysis.match.limitations:
 			st.warning(limitation)
+	with evidence_tab:
+		st.subheader("What the camera measured")
+		st.video(video_path)
+		movement_rows = movement_series(video_result.pose_observations)
+		if movement_rows:
+			st.line_chart(movement_rows, x="frame", y=["wrist_displacement", "pose_confidence"])
+			st.caption("Wrist displacement is normalized image movement between sampled frames; it is not stroke speed.")
+		st.dataframe(
+			[
+				{
+					"metric": item.metric,
+					"value": round(float(item.value), 4) if isinstance(item.value, (int, float)) else item.value,
+					"samples": item.sample_count,
+					"confidence": f"{item.measurement_confidence:.0%}",
+					"reliability": item.reliability,
+				}
+				for item in evidence.items
+			],
+			use_container_width=True,
+			hide_index=True,
+		)
+		if movement_rows:
+			gallery = st.columns(min(4, len(movement_rows)))
+			for column, row in zip(gallery, movement_rows[:4]):
+				with column:
+					column.image(extract_frame(video_path, int(row["frame"])), caption=f"Frame {int(row['frame'])}")
+		else:
+			st.warning("No consecutive wrist keypoints were available for visual movement analysis.")
 	with technical:
 		st.subheader("Biomechanics")
 		st.write(analysis.biomechanics.summary)
@@ -106,6 +137,15 @@ else:
 				st.write(f"Schedule: {recommendation.frequency}; {recommendation.volume}")
 				st.write(f"Confidence: {recommendation.confidence:.0%}")
 				st.write(f"Evidence: {', '.join(recommendation.evidence_refs)}")
+				if recommendation.evidence_refs == ("metric.pose.right_wrist_displacement",):
+					movement_item = evidence.item(recommendation.evidence_refs[0])
+					if movement_item.frame_refs:
+						clip_start, clip_end = movement_item.frame_refs[0]
+						context_frames = max(1, int(video_result.fps * 0.5))
+						clip_start = max(0, clip_start - context_frames)
+						clip_end = min(video_result.frame_count - 1, clip_end + context_frames)
+						st.caption(f"Supporting transition: frames {clip_start}-{clip_end}")
+						st.video(create_clip(video_path, clip_start, clip_end, video_result.fps))
 	else:
 		for limitation in analysis.coach.limitations:
 			st.warning(limitation)
