@@ -16,3 +16,13 @@ def test_extract_frames():
     assert isinstance(frames, list)
     assert len(frames) > 0
     assert frames[0].shape[0] > 0 and frames[0].shape[1] > 0
+
+
+def test_skip_must_be_positive():
+    video_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../tennis_match_video1.mp4'))
+    try:
+        load_video_frames(video_path, skip=0)
+    except ValueError as error:
+        assert "skip" in str(error)
+    else:
+        raise AssertionError("zero skip was accepted")

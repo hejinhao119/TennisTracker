@@ -2,6 +2,8 @@ import cv2
 
 def load_video_frames(video_path, skip=1):
     """Loads frames from video and returns them as a list."""
+    if skip < 1:
+        raise ValueError("skip must be at least 1")
     cap = cv2.VideoCapture(video_path)
     frames = []
     frame_idx = 0

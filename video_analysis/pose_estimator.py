@@ -1,8 +1,8 @@
 from ultralytics import YOLO
-import cv2
+from pathlib import Path
 
 # Load the YOLOv8 Pose model
-model = YOLO('../models/yolov8n-pose.pt')
+model = YOLO(Path(__file__).resolve().parent.parent / 'models' / 'yolov8n-pose.pt')
 
 def detect_pose(frame):
     """
@@ -21,3 +21,20 @@ def detect_pose(frame):
 
     annotated_frame = results[0].plot()
     return annotated_frame
+
+
+def detect_pose_observation(frame, frame_index):
+    """Return structured pose evidence without presenting it as stroke evidence."""
+    from evidence.schemas import PoseObservation
+
+    results = model.predict(source=frame, save=False, conf=0.3, verbose=False)
+    if not results:
+        return PoseObservation(frame_index, 0, 0.0)
+
+    result = results[0]
+    person_count = len(result.boxes) if result.boxes is not None else 0
+    if result.boxes is None or result.boxes.conf is None or person_count == 0:
+        confidence = 0.0
+    else:
+        confidence = float(result.boxes.conf.mean().item())
+    return PoseObservation(frame_index, person_count, confidence)

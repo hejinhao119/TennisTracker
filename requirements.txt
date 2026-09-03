@@ -1,0 +1,4 @@
+streamlit>=1.40
+opencv-python>=4.8
+ultralytics>=8.2
+pytest>=8.0
