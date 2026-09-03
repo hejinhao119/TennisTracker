@@ -4,7 +4,9 @@ from pathlib import Path
 import cv2
 
 from evidence.schemas import PoseObservation
+from evidence.schemas import BallObservation
 
+from .ball_tracker import detect_ball
 from .pose_estimator import detect_pose_observation
 
 
@@ -15,6 +17,7 @@ class VideoAnalysisResult:
     width: int
     height: int
     pose_observations: tuple[PoseObservation, ...]
+    ball_observations: tuple[BallObservation, ...] = ()
 
 
 def analyze_video(video_path: str | Path, sample_every: int = 30, max_samples: int = 120) -> VideoAnalysisResult:
@@ -31,6 +34,7 @@ def analyze_video(video_path: str | Path, sample_every: int = 30, max_samples: i
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
     observations: list[PoseObservation] = []
+    ball_observations: list[BallObservation] = []
     frame_index = 0
     try:
         while len(observations) < max_samples:
@@ -39,10 +43,11 @@ def analyze_video(video_path: str | Path, sample_every: int = 30, max_samples: i
                 break
             if frame_index % sample_every == 0:
                 observations.append(detect_pose_observation(frame, frame_index))
+                ball_observations.append(detect_ball(frame, frame_index))
             frame_index += 1
     finally:
         capture.release()
 
     if not observations:
         raise ValueError("Video contained no readable frames")
-    return VideoAnalysisResult(fps, frame_count, width, height, tuple(observations))
+    return VideoAnalysisResult(fps, frame_count, width, height, tuple(observations), tuple(ball_observations))

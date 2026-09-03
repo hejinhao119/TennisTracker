@@ -14,6 +14,7 @@ TennisTracker is an evidence-grounded coaching prototype combining local compute
 - Dense pose sampling can produce a movement-pattern report with linked frame transitions and a practical shadow-swing drill.
 - The report includes the source video, a movement chart, representative frames, and an evidence-linked supporting clip.
 - Pose inference is configurable through environment variables and uses temporal tracking when available; keypoint confidence is reported separately from person confidence.
+- A conservative color-based ball candidate tracker now contributes coverage and normalized trajectory evidence; it does not yet claim calibrated speed, bounce, or in/out results.
 
 ## Architecture
 

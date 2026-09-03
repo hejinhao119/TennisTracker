@@ -58,6 +58,28 @@ class PoseObservation:
 
 
 @dataclass(frozen=True)
+class BallObservation:
+    """A frame-level candidate for the tennis ball in normalized coordinates."""
+
+    frame_index: int
+    x: float | None
+    y: float | None
+    confidence: float
+    radius: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.frame_index < 0:
+            raise ValueError("ball frame index cannot be negative")
+        _bounded_confidence(self.confidence, "ball confidence")
+        if (self.x is None) != (self.y is None):
+            raise ValueError("ball x and y must be provided together")
+        if self.x is not None and not 0.0 <= self.x <= 1.0:
+            raise ValueError("ball x must be normalized between 0 and 1")
+        if self.y is not None and not 0.0 <= self.y <= 1.0:
+            raise ValueError("ball y must be normalized between 0 and 1")
+
+
+@dataclass(frozen=True)
 class EvidenceItem:
     """An auditable metric available to agents, with provenance and uncertainty."""
 

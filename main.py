@@ -33,6 +33,7 @@ if analyze and uploaded_video is not None:
 			session_id=str(uuid.uuid4()),
 			strokes=[],
 			pose_observations=list(video_result.pose_observations),
+			ball_observations=list(video_result.ball_observations),
 		)
 		repository = SessionRepository()
 		pose_metric = evidence.item("metric.pose.detection_rate")
@@ -57,6 +58,8 @@ else:
 	video_path = st.session_state["video_path"]
 	st.metric("Sampled pose frames", len(video_result.pose_observations))
 	st.metric("Pose detection rate", f"{evidence.item('metric.pose.detection_rate').value:.0%}")
+		ball_metric = evidence.item("metric.ball.detection_rate")
+		st.metric("Ball candidate coverage", f"{ball_metric.value:.0%}")
 	previous_pose = st.session_state.get("previous_pose")
 	if previous_pose is not None:
 		current_pose = evidence.item("metric.pose.detection_rate")
@@ -86,6 +89,10 @@ else:
 		if movement_rows:
 			st.line_chart(movement_rows, x="frame", y=["wrist_displacement", "pose_confidence"])
 			st.caption("Wrist displacement is normalized image movement between sampled frames; it is not stroke speed.")
+		ball_item = evidence.item("metric.ball.normalized_displacement") if any(item.metric == "ball.normalized_displacement" for item in evidence.items) else None
+		if ball_item is not None:
+			st.metric("Mean ball displacement", f"{ball_item.value:.3f}", help="Normalized image distance between consecutive detected ball candidates.")
+			st.caption("Ball movement is a candidate trajectory signal. It is not calibrated court speed or bounce classification.")
 		st.dataframe(
 			[
 				{

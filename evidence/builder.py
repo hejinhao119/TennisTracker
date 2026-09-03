@@ -1,7 +1,7 @@
 from collections import Counter
 from statistics import fmean, pstdev
 
-from .schemas import EvidenceItem, EvidenceReport, PoseObservation, StrokeObservation
+from .schemas import BallObservation, EvidenceItem, EvidenceReport, PoseObservation, StrokeObservation
 
 
 def _reliability(sample_count: int, confidence: float) -> str:
@@ -16,10 +16,12 @@ def build_evidence(
     session_id: str,
     strokes: list[StrokeObservation],
     pose_observations: list[PoseObservation] | None = None,
+    ball_observations: list[BallObservation] | None = None,
 ) -> EvidenceReport:
     """Validate vision observations and expose only aggregate, traceable metrics."""
     items: list[EvidenceItem] = []
     pose_observations = pose_observations or []
+    ball_observations = ball_observations or []
     by_type = Counter(stroke.stroke_type for stroke in strokes)
     total = len(strokes)
 
@@ -141,6 +143,43 @@ def build_evidence(
                         frame_refs=tuple((pair[1], pair[2]) for pair in wrist_pairs),
                     )
                 )
+
+    if ball_observations:
+        detected_balls = [observation for observation in ball_observations if observation.x is not None]
+        confidence = fmean(observation.confidence for observation in ball_observations)
+        items.append(
+            EvidenceItem(
+                evidence_id="metric.ball.detection_rate",
+                metric="ball.detection_rate",
+                value=len(detected_balls) / len(ball_observations),
+                unit="ratio",
+                source="vision.ball_tracker",
+                measurement_confidence=confidence,
+                sample_count=len(ball_observations),
+                reliability=_reliability(len(ball_observations), confidence),
+                frame_refs=tuple((observation.frame_index, observation.frame_index) for observation in detected_balls),
+            )
+        )
+        trajectory = []
+        for previous, current in zip(ball_observations, ball_observations[1:]):
+            if previous.x is None or current.x is None:
+                continue
+            distance = ((current.x - previous.x) ** 2 + (current.y - previous.y) ** 2) ** 0.5
+            trajectory.append((distance, previous.frame_index, current.frame_index))
+        if trajectory:
+            items.append(
+                EvidenceItem(
+                    evidence_id="metric.ball.normalized_displacement",
+                    metric="ball.normalized_displacement",
+                    value=fmean(item[0] for item in trajectory),
+                    unit="normalized_frame_distance",
+                    source="vision.ball_tracker",
+                    measurement_confidence=confidence,
+                    sample_count=len(trajectory),
+                    reliability=_reliability(len(trajectory), confidence),
+                    frame_refs=tuple((item[1], item[2]) for item in trajectory),
+                )
+            )
 
     missing_data = []
     if not strokes:
