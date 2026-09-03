@@ -58,8 +58,8 @@ else:
 	video_path = st.session_state["video_path"]
 	st.metric("Sampled pose frames", len(video_result.pose_observations))
 	st.metric("Pose detection rate", f"{evidence.item('metric.pose.detection_rate').value:.0%}")
-		ball_metric = evidence.item("metric.ball.detection_rate")
-		st.metric("Ball candidate coverage", f"{ball_metric.value:.0%}")
+	ball_metric = evidence.item("metric.ball.detection_rate")
+	st.metric("Ball candidate coverage", f"{ball_metric.value:.0%}")
 	previous_pose = st.session_state.get("previous_pose")
 	if previous_pose is not None:
 		current_pose = evidence.item("metric.pose.detection_rate")
