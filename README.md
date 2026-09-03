@@ -11,6 +11,7 @@ TennisTracker is an evidence-grounded coaching prototype combining local compute
 - Coach synthesis and a critic run through a bounded orchestration loop.
 - A mock LLM provider supports deterministic local tests without paid API calls.
 - Streamlit exposes upload, analysis status, limitations, coach output, and an execution trace.
+- Dense pose sampling can produce a movement-pattern report with linked frame transitions and a practical shadow-swing drill.
 
 ## Architecture
 

@@ -35,6 +35,12 @@ def detect_pose_observation(frame, frame_index):
     person_count = len(result.boxes) if result.boxes is not None else 0
     if result.boxes is None or result.boxes.conf is None or person_count == 0:
         confidence = 0.0
+        keypoints = ()
     else:
-        confidence = float(result.boxes.conf.mean().item())
-    return PoseObservation(frame_index, person_count, confidence)
+        box_confidences = result.boxes.conf
+        primary_index = int(box_confidences.argmax().item())
+        confidence = float(box_confidences[primary_index].item())
+        height, width = frame.shape[:2]
+        points = result.keypoints.xy[primary_index].tolist() if result.keypoints is not None else []
+        keypoints = tuple((float(x) / width, float(y) / height) for x, y in points)
+    return PoseObservation(frame_index, person_count, confidence, keypoints)

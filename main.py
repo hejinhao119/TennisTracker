@@ -27,7 +27,7 @@ if analyze and uploaded_video is not None:
 		video_path = video_file.name
 	try:
 		with st.spinner("Extracting frame-level pose evidence..."):
-			video_result = analyze_video(video_path)
+			video_result = analyze_video(video_path, sample_every=10, max_samples=60)
 		evidence = build_evidence(
 			session_id=str(uuid.uuid4()),
 			strokes=[],

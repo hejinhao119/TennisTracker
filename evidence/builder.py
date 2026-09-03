@@ -82,6 +82,30 @@ def build_evidence(
             )
         )
 
+        wrist_pairs = []
+        for previous, current in zip(pose_observations, pose_observations[1:]):
+            if len(previous.keypoints) <= 10 or len(current.keypoints) <= 10:
+                continue
+            previous_wrist = previous.keypoints[10]
+            current_wrist = current.keypoints[10]
+            displacement = ((current_wrist[0] - previous_wrist[0]) ** 2 + (current_wrist[1] - previous_wrist[1]) ** 2) ** 0.5
+            wrist_pairs.append((displacement, previous.frame_index, current.frame_index))
+        if wrist_pairs:
+            confidence = fmean(observation.confidence for observation in pose_observations)
+            items.append(
+                EvidenceItem(
+                    evidence_id="metric.pose.right_wrist_displacement",
+                    metric="pose.right_wrist_displacement",
+                    value=fmean(pair[0] for pair in wrist_pairs),
+                    unit="normalized_frame_distance",
+                    source="vision.pose_estimator.keypoints",
+                    measurement_confidence=confidence,
+                    sample_count=len(wrist_pairs),
+                    reliability=_reliability(len(wrist_pairs), confidence),
+                    frame_refs=tuple((pair[1], pair[2]) for pair in wrist_pairs),
+                )
+            )
+
     missing_data = []
     if not strokes:
         missing_data.append("No valid strokes were detected")

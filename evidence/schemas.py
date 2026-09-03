@@ -43,11 +43,15 @@ class PoseObservation:
     frame_index: int
     person_count: int
     confidence: float
+    keypoints: tuple[tuple[float, float], ...] = ()
 
     def __post_init__(self) -> None:
         if self.frame_index < 0 or self.person_count < 0:
             raise ValueError("pose frame index and person count are invalid")
         _bounded_confidence(self.confidence, "pose confidence")
+        for point in self.keypoints:
+            if len(point) != 2 or not all(0.0 <= coordinate <= 1.0 for coordinate in point):
+                raise ValueError("pose keypoints must be normalized between 0 and 1")
 
 
 @dataclass(frozen=True)

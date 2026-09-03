@@ -15,7 +15,7 @@ class CoachAgent:
                     priority=1,
                     issue=finding.claim,
                     rationale="The finding is supported by normalized contact estimates and linked frames.",
-                    drill="Early unit-turn shadow swings",
+                    drill=("Early unit-turn shadow swings" if finding.category == "contact_point" else "Controlled shadow swings with a deliberate split-step"),
                     frequency="3 sessions/week",
                     volume="3 x 10 repetitions",
                     confidence=finding.confidence,
