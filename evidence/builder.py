@@ -1,5 +1,5 @@
 from collections import Counter
-from statistics import fmean
+from statistics import fmean, pstdev
 
 from .schemas import EvidenceItem, EvidenceReport, PoseObservation, StrokeObservation
 
@@ -92,6 +92,8 @@ def build_evidence(
             wrist_pairs.append((displacement, previous.frame_index, current.frame_index))
         if wrist_pairs:
             confidence = fmean(observation.confidence for observation in pose_observations)
+            displacements = [pair[0] for pair in wrist_pairs]
+            active_pairs = [pair for pair in displacements if pair >= 0.05]
             items.append(
                 EvidenceItem(
                     evidence_id="metric.pose.right_wrist_displacement",
@@ -105,6 +107,26 @@ def build_evidence(
                     frame_refs=tuple((pair[1], pair[2]) for pair in wrist_pairs),
                 )
             )
+            profile_metrics = (
+                ("mean", fmean(displacements)),
+                ("variability", pstdev(displacements) if len(displacements) > 1 else 0.0),
+                ("active_ratio", len(active_pairs) / len(displacements)),
+                ("peak", max(displacements)),
+            )
+            for metric_suffix, value in profile_metrics:
+                items.append(
+                    EvidenceItem(
+                        evidence_id=f"metric.pose.wrist_movement.{metric_suffix}",
+                        metric=f"pose.wrist_movement.{metric_suffix}",
+                        value=value,
+                        unit="normalized_frame_distance" if metric_suffix != "active_ratio" else "ratio",
+                        source="vision.pose_estimator.keypoints",
+                        measurement_confidence=confidence,
+                        sample_count=len(displacements),
+                        reliability=_reliability(len(displacements), confidence),
+                        frame_refs=tuple((pair[1], pair[2]) for pair in wrist_pairs),
+                    )
+                )
 
     missing_data = []
     if not strokes:

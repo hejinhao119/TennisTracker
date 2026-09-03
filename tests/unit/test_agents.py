@@ -38,3 +38,17 @@ def test_critic_rejects_unknown_evidence_reference() -> None:
 
     assert not critic.approved
     assert any("missing evidence" in issue for issue in critic.issues)
+
+
+def test_low_pose_coverage_prioritizes_capture_quality() -> None:
+    from evidence.schemas import PoseObservation
+
+    evidence = build_evidence(
+        "session-low-coverage",
+        [],
+        [PoseObservation(0, 1, 0.8), PoseObservation(1, 0, 0.0), PoseObservation(2, 0, 0.0)],
+    )
+    run = run_coaching_analysis(evidence)
+
+    assert run.biomechanics.findings[0].finding_id == "biomechanics.low_visual_coverage"
+    assert run.coach.recommendations[0].drill == "Re-record from a wider, steadier camera position"
