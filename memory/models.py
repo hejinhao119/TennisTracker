@@ -18,3 +18,10 @@ class MetricComparison:
     change: float
     meaningful: bool
     reason: str
+
+
+@dataclass(frozen=True)
+class UserFeedback:
+    session_id: str
+    subject: str
+    outcome: str

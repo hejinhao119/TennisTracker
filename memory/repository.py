@@ -3,7 +3,7 @@ from pathlib import Path
 
 from evidence.schemas import EvidenceReport
 
-from .models import SessionMetric
+from .models import SessionMetric, UserFeedback
 
 
 class SessionRepository:
@@ -29,6 +29,16 @@ class SessionRepository:
                     sample_count INTEGER NOT NULL,
                     confidence REAL NOT NULL,
                     PRIMARY KEY (session_id, metric)
+                )
+                """
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS user_feedback (
+                    session_id TEXT NOT NULL,
+                    subject TEXT NOT NULL,
+                    outcome TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """
             )
@@ -61,3 +71,20 @@ class SessionRepository:
                 (metric, limit),
             ).fetchall()
         return [SessionMetric(row["session_id"], row["metric"], row["value"], row["sample_count"], row["confidence"]) for row in rows]
+
+    def save_feedback(self, feedback: UserFeedback) -> None:
+        if not feedback.session_id or not feedback.subject or not feedback.outcome:
+            raise ValueError("feedback requires a session, subject, and outcome")
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO user_feedback (session_id, subject, outcome) VALUES (?, ?, ?)",
+                (feedback.session_id, feedback.subject, feedback.outcome),
+            )
+
+    def get_feedback(self, subject: str) -> list[UserFeedback]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT session_id, subject, outcome FROM user_feedback WHERE subject = ? ORDER BY rowid DESC",
+                (subject,),
+            ).fetchall()
+        return [UserFeedback(row["session_id"], row["subject"], row["outcome"]) for row in rows]

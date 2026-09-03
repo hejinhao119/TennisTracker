@@ -5,7 +5,7 @@ import streamlit as st
 
 from agents.orchestration import run_coaching_analysis
 from evidence.builder import build_evidence
-from memory.models import SessionMetric
+from memory.models import SessionMetric, UserFeedback
 from memory.repository import SessionRepository
 from memory.session_history import compare_metric
 
@@ -109,4 +109,14 @@ else:
 	else:
 		for limitation in analysis.coach.limitations:
 			st.warning(limitation)
+
+	st.divider()
+	st.subheader("Feedback")
+	feedback_subject = "coach_report"
+	feedback = st.radio("Was this finding useful?", ["Yes", "No"], horizontal=True)
+	if st.button("Save feedback"):
+		SessionRepository().save_feedback(
+			UserFeedback(evidence.session_id, feedback_subject, feedback)
+		)
+		st.success("Feedback saved for future coaching context.")
 
