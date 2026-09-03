@@ -1,4 +1,6 @@
 from agents.orchestration import run_coaching_analysis
+from agents.critic import CoachCriticAgent
+from agents.schemas import CoachRecommendation, CoachReport
 from evidence.builder import build_evidence
 from evidence.schemas import StrokeObservation
 
@@ -23,3 +25,16 @@ def test_biomechanics_does_not_overclaim_small_sample() -> None:
 
     assert not run.coach.recommendations
     assert any("fewer than 8" in item for item in run.biomechanics.limitations)
+
+
+def test_critic_rejects_unknown_evidence_reference() -> None:
+    evidence = build_evidence("session-3", [])
+    report = CoachReport(
+        "diagnosis",
+        (CoachRecommendation(1, "issue", "reason", "drill", "weekly", "3 reps", 0.8, ("missing",)),),
+    )
+
+    critic = CoachCriticAgent().review(report, evidence)
+
+    assert not critic.approved
+    assert any("missing evidence" in issue for issue in critic.issues)

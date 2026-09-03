@@ -21,6 +21,6 @@ def run_coaching_analysis(evidence: EvidenceReport, max_retries: int = 2) -> Coa
     while True:
         attempts += 1
         coach_report = coach.synthesize(evidence, reports)
-        critic_report = critic.review(coach_report)
+        critic_report = critic.review(coach_report, evidence)
         if critic_report.approved or attempts > max_retries:
             return CoachingRun(*reports, coach_report, critic_report, attempts)
