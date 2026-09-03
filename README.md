@@ -13,6 +13,7 @@ TennisTracker is an evidence-grounded coaching prototype combining local compute
 - Streamlit exposes upload, analysis status, limitations, coach output, and an execution trace.
 - Dense pose sampling can produce a movement-pattern report with linked frame transitions and a practical shadow-swing drill.
 - The report includes the source video, a movement chart, representative frames, and an evidence-linked supporting clip.
+- Pose inference is configurable through environment variables and uses temporal tracking when available; keypoint confidence is reported separately from person confidence.
 
 ## Architecture
 
@@ -42,7 +43,15 @@ pip install -r requirements.txt
 streamlit run main.py
 ```
 
+Tracking uses ByteTrack through Ultralytics and requires `lap`; it is included in `requirements.txt`.
+
 The current entry point reports pose-derived movement evidence with visual support. Stroke type, ball trajectory, court position, and in/out claims remain unavailable until those extractors are implemented.
+
+## Accuracy direction
+
+The current YOLOv8 pose model is a generic baseline, not a tennis-specific accuracy guarantee. The recommended upgrade path is RTMPose through [MMPose](https://github.com/open-mmlab/mmpose) and its [RTMPose project](https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose), deployed with ONNXRuntime/MMDeploy where latency matters. For ball, court, and bounce signals, [ArtLabss/tennis-tracking](https://github.com/ArtLabss/tennis-tracking) is a useful reference because it separates player detection, court geometry, TrackNet-style ball tracking, and bounce classification. [ViTPose](https://github.com/ViTAE-Transformer/ViTPose) is an accuracy-oriented pose candidate, but its heavier dependencies make it a later benchmark candidate.
+
+Do not switch models based on reputation alone. Compare them on a held-out tennis set using pose detection rate, keypoint confidence, temporal identity switches, event precision/recall, latency, and failure rate. The UI should withhold technical coaching when the capture or model quality gate fails.
 
 ## Testing
 

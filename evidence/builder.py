@@ -68,6 +68,7 @@ def build_evidence(
     if pose_observations:
         detected = [observation for observation in pose_observations if observation.person_count > 0]
         confidence = fmean(observation.confidence for observation in pose_observations)
+        keypoint_confidence = fmean(observation.keypoint_confidence for observation in pose_observations)
         items.append(
             EvidenceItem(
                 evidence_id="metric.pose.detection_rate",
@@ -78,6 +79,19 @@ def build_evidence(
                 measurement_confidence=confidence,
                 sample_count=len(pose_observations),
                 reliability=_reliability(len(pose_observations), confidence),
+                frame_refs=tuple((observation.frame_index, observation.frame_index) for observation in detected),
+            )
+        )
+        items.append(
+            EvidenceItem(
+                evidence_id="metric.pose.keypoint_confidence",
+                metric="pose.keypoint_confidence",
+                value=keypoint_confidence,
+                unit="ratio",
+                source="vision.pose_estimator.keypoints",
+                measurement_confidence=confidence,
+                sample_count=len(pose_observations),
+                reliability=_reliability(len(pose_observations), keypoint_confidence),
                 frame_refs=tuple((observation.frame_index, observation.frame_index) for observation in detected),
             )
         )

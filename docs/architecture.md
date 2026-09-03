@@ -4,6 +4,8 @@ The system separates uncertain video intelligence from reasoning. Vision adapter
 
 The orchestration is deterministic: three specialists run, the coach synthesizes their structured reports, and the critic validates grounding. Retries are bounded by `max_retries`; ordinary calculations and routing stay in Python. The LLM provider protocol is isolated under `llm/`, with a mock implementation for local development.
 
+Pose inference uses configurable Ultralytics tracking today. It preserves a stable track ID and keypoint-level confidence when the backend provides them. The adapter boundary is deliberate: RTMPose/MMPose can replace this backend without changing evidence or agent contracts. A quality gate should block technical coaching when coverage or keypoint confidence is weak.
+
 ```mermaid
 flowchart TD
     Video --> Vision[Vision adapters]
